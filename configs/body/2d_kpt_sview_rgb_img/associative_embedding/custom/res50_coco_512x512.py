@@ -2,6 +2,13 @@ _base_ = [
     '../../../../_base_/default_runtime.py',
     '../../../../_base_/datasets/coco.py'
 ]
+custom_imports = dict(
+    imports=[
+        "custom_models.datasets.bottom_up.bottom_up_lying_reco",
+        "custom_models.detectors.associative_embedding_custom",
+    ],
+    allow_failed_imports=False)
+
 checkpoint_config = dict(interval=10)
 evaluation = dict(interval=50, metric='mAP', save_best='AP')
 
@@ -41,7 +48,7 @@ data_cfg = dict(
 
 # model settings
 model = dict(
-    type='AssociativeEmbedding',
+    type='AssociativeEmbeddingCustom',
     pretrained='torchvision://resnet50',
     backbone=dict(type='ResNet', depth=50),
     keypoint_head=dict(
@@ -136,23 +143,23 @@ data = dict(
     val_dataloader=dict(samples_per_gpu=1),
     test_dataloader=dict(samples_per_gpu=1),
     train=dict(
-        type='BottomUpCocoDataset',
-        ann_file=f'/project/train/src_repo/code/train.json',
-        img_prefix=f'/home/data/1262/',
+        type='BottomUpLyingRecoDataset',
+        ann_file=f'/home/disk0/hyq/JSPT/ly_reco/train.json',
+        img_prefix=f'/home/disk0/hyq/JSPT/data/1262/',
         data_cfg=data_cfg,
         pipeline=train_pipeline,
         dataset_info={{_base_.dataset_info}}),
     val=dict(
-        type='BottomUpCocoDataset',
-        ann_file=f'/project/train/src_repo/code/train.json',
-        img_prefix=f'/home/data/1262/',
+        type='BottomUpLyingRecoDataset',
+        ann_file=f'/home/disk0/hyq/JSPT/ly_reco/train.json',
+        img_prefix=f'/home/disk0/hyq/JSPT/data/1262/',
         data_cfg=data_cfg,
         pipeline=val_pipeline,
         dataset_info={{_base_.dataset_info}}),
     test=dict(
-        type='BottomUpCocoDataset',
-        ann_file=f'/project/train/src_repo/code/train.json',
-        img_prefix=f'/home/data/1262/',
+        type='BottomUpLyingRecoDataset',
+        ann_file=f'/home/disk0/hyq/JSPT/ly_reco/train.json',
+        img_prefix=f'/home/disk0/hyq/JSPT/data/1262/',
         data_cfg=data_cfg,
         pipeline=test_pipeline,
         dataset_info={{_base_.dataset_info}}),

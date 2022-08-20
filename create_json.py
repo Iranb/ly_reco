@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-ann_dir = '/home/data/1262'
+ann_dir = '/home/disk0/hyq/JSPT/data/1262'
 annotation_files = Path(ann_dir).rglob('*.json')
 
 model_class_names = ["others_unsure", "squatting_unsure", "sitting_unsure", "standing_unsure", "lying_unsure", "others", "squatting", "sitting", "standing", "lying"]
@@ -69,7 +69,7 @@ result_json = {
     'annotations': annotations,
     'categories': categories
 }
-with open('/project/train/src_repo/code/train.json', 'w') as f:
+with open('./train.json', 'w') as f:
     json.dump(result_json, f)
 
 print("done")
