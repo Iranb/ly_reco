@@ -109,7 +109,7 @@ train_pipeline = [
     ),
     dict(
         type='Collect',
-        keys=['img', 'joints', 'targets', 'masks'],
+        keys=['img', 'joints', 'targets', 'masks', 'cls_label', 'bbox_label'],
         meta_keys=[]),
 ]
 

@@ -49,10 +49,6 @@ class AssociativeEmbeddingCustom(BasePose):
         self.fp16_enabled = False
 
         self.backbone = builder.build_backbone(backbone)
-
-        # self.cls_head = ClsHead()
-        # self.bbox_head = Bbox_head()
-
         if keypoint_head is not None:
             if 'loss_keypoint' not in keypoint_head and loss_pose is not None:
                 warnings.warn(
@@ -97,6 +93,10 @@ class AssociativeEmbeddingCustom(BasePose):
                 return_loss=True,
                 return_heatmap=False,
                 **kwargs):
+
+        print('cls_label',cls_label)
+        print('bbox_label',bbox_label)
+        exit(0)
         """Calls either forward_train or forward_test depending on whether
         return_loss is True.
 
@@ -182,11 +182,6 @@ class AssociativeEmbeddingCustom(BasePose):
         if self.with_keypoint:
             output = self.keypoint_head(output) # len(humans), each :[B, 34, H, W] # key_point x, y
         
-        # cls_result = self.cls_head(output)
-        # bbox_result = self.bbox_head(output)
-        
-        # loss_cls = CE_loss(cls_result, cls_label)
-        # loss_bbox = box_regloss(bbox_result, bbox_label)
 
 
         # if return loss
@@ -196,8 +191,6 @@ class AssociativeEmbeddingCustom(BasePose):
                 output, targets, masks, joints)
             losses.update(keypoint_losses) # {"ce": losss, "key_pint": keyloss} 
         # [x,y,h,w] [x+a, y+b, h*scal_h, w*scalw]
-        losses['cls_loss'] = loss_cls
-        losses['box_loss'] = loss_bbox
         return losses
 
     def forward_dummy(self, img):
@@ -257,13 +250,6 @@ class AssociativeEmbeddingCustom(BasePose):
             if self.with_keypoint:
                 outputs = self.keypoint_head(features) ## 中检结果
             
-            
-        
-            cls_output = self.cls_head(outputs)
-            box_output = self.bbox_head(outputs)
-
-                # pred_class = self.class_head(outputs)
-                # bbox = self.bbox_head(outputs)
 
             heatmaps, tags = split_ae_outputs(
                 outputs, self.test_cfg['num_joints'], 
@@ -377,9 +363,6 @@ class AssociativeEmbeddingCustom(BasePose):
         result['image_paths'] = image_paths
         result['output_heatmap'] = output_heatmap
 
-        # result['cls'] = cls_output
-        # result['bbox'] = box_output
-        # 
 
         return result
 
@@ -448,24 +431,3 @@ class AssociativeEmbeddingCustom(BasePose):
             imwrite(img, out_file)
 
         return img
-
-
-# class ClsHead(torch.nn.Module):
-#     def __init__(self):
-#         super().__init__()
-#         self.fc = torch.nn.Linear(34*128*128, 10)
-
-#     def forward(self, x):
-#         x = self.fc(x)
-#         return x
-
-
-
-# class Bbox_head(torch.nn.Module):
-#     def __init__(self):
-#         super().__init__()
-#         self.fc = torch.nn.Linear(34*128*128, 10)
-
-#     def forward(self, x):
-#         x = self.fc(x)
-#         return x
