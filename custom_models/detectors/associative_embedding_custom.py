@@ -3,6 +3,8 @@ import warnings
 
 import mmcv
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
 from mmcv.image import imwrite
 from mmcv.utils.misc import deprecated_api_warning
 from mmcv.visualization.image import imshow
@@ -22,7 +24,7 @@ except ImportError:
     warnings.warn('auto_fp16 from mmpose will be deprecated from v0.15.0'
                   'Please install mmcv>=1.1.4')
     from mmpose.core import auto_fp16
-
+from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 
 @POSENETS.register_module()
 class AssociativeEmbeddingCustom(BasePose):
@@ -84,7 +86,7 @@ class AssociativeEmbeddingCustom(BasePose):
     @auto_fp16(apply_to=('img', ))
     def forward(self,
                 img=None,
-                targets=None,
+                targets=None, # torch.Size([B, 17, heatmap_size, heatmap_size])
                 masks=None,
                 joints=None,
                 cls_label=None, # add for ly_reco
@@ -93,10 +95,6 @@ class AssociativeEmbeddingCustom(BasePose):
                 return_loss=True,
                 return_heatmap=False,
                 **kwargs):
-
-        print('cls_label',cls_label)
-        print('bbox_label',bbox_label)
-        exit(0)
         """Calls either forward_train or forward_test depending on whether
         return_loss is True.
 
@@ -136,9 +134,11 @@ class AssociativeEmbeddingCustom(BasePose):
                 Otherwise, return predicted poses, scores, image \
                 paths and heatmaps.
         """
-
+        if bbox_label:
+            # convert bbox from [top_left_x, top_left_y, w, h] to [x, y, x, y]
+            pass
         if return_loss:
-            return self.forward_train(img, targets, masks, joints, img_metas,
+            return self.forward_train(img, targets, masks, joints, img_metas,cls_label=cls_label, bbox_label=bbox_label,
                                       **kwargs)
         return self.forward_test(
             img, img_metas, return_heatmap=return_heatmap, **kwargs)
@@ -182,7 +182,11 @@ class AssociativeEmbeddingCustom(BasePose):
         if self.with_keypoint:
             output = self.keypoint_head(output) # len(humans), each :[B, 34, H, W] # key_point x, y
         
-
+        print(output[0].size())
+        print(targets[0].size())
+        print('cls_label', cls_label[0].size())
+        print('bbox_label', bbox_label[0][0].size()) # list(num_person) [4,16]
+        exit(0)
 
         # if return loss
         losses = dict()
@@ -248,7 +252,7 @@ class AssociativeEmbeddingCustom(BasePose):
 
             features = self.backbone(image_resized)
             if self.with_keypoint:
-                outputs = self.keypoint_head(features) ## 中检结果
+                outputs = self.keypoint_head(features) ## 中间结果
             
 
             heatmaps, tags = split_ae_outputs(
@@ -431,3 +435,42 @@ class AssociativeEmbeddingCustom(BasePose):
             imwrite(img, out_file)
 
         return img
+
+
+class Classifier(torch.nn.Module):
+    def __init__(self,):
+        super().__init__()
+        self.conv1 = nn.Conv2d(3, 6, 5)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.conv2 = nn.Conv2d(6, 16, 5)
+        self.fc1 = nn.Linear(16 * 29 * 29, 120)
+        self.fc2 = nn.Linear(120, 84)
+        self.fc3 = nn.Linear(84, 10)
+
+    def forward(self, x):
+        x = self.pool(F.relu(self.conv1(x)))
+        x = self.pool(F.relu(self.conv2(x)))
+        print(x.size())
+        x = torch.flatten(x, 1) # flatten all dimensions except batch
+        print(x.size())
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
+
+
+def tlwh2xyxy(bbox, img_width=1920, img_height=1080):
+    # 躺坐识别中的bbox 标注格式为：[top, left, w, h]
+    top, left, w, h = bbox
+    xcenter = (xmin + w/2) / w_img
+    ycenter = (ymin + h/2) / h_img
+    w = w / w_img
+    h = h / h_img
+
+
+class DetectHead(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+    
+    def forward(self, x):
+        return x

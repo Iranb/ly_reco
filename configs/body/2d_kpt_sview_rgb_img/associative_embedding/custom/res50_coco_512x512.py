@@ -68,7 +68,9 @@ model = dict(
             with_heatmaps_loss=[True],
             heatmaps_loss_factor=[1.0],
         )),
-    train_cfg=dict(),
+    train_cfg=dict(
+        heatmap_size=data_cfg['heatmap_size'],
+    ),
     test_cfg=dict(
         num_joints=channel_cfg['dataset_joints'],
         max_num_people=30,
